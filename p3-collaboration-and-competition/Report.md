@@ -28,3 +28,5 @@ concrete future details
 * Try implementing this logic on the Soccer environment.
 
 * Explore other algorithms and compare performance. PPO would be interesting as it is used in the DOTA AI.
+
+* Explore the effects of further modifying the neural network hyperparameters (number of layers, activations, normalizations, etc)
