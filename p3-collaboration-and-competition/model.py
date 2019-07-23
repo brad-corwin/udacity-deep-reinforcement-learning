@@ -25,8 +25,11 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
         self.seed = torch.manual_seed(seed)
         self.fc1 = nn.Linear(state_size, fc1_units)
+        self.bn1 = nn.BatchNorm1d(fc1_units)
         self.fc2 = nn.Linear(fc1_units, fc2_units)
+        self.bn2 = nn.BatchNorm1d(fc2_units)
         self.fc3 = nn.Linear(fc2_units, action_size)
+        self.bn3 = nn.BatchNorm1d(action_size)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -36,19 +39,12 @@ class Actor(nn.Module):
 
     def forward(self, state):
         """Build an actor (policy) network that maps states -> actions."""
-        x = F.relu(self.fc1(state))
-        x = F.relu(self.fc2(x))
-        return F.tanh(self.fc3(x))
-
-        #x = F.leaky_relu(self.fc1(state))
-        #x = F.leaky_relu(self.fc2(x))
-        #h3 = (self.fc3(x))
-        #norm = torch.norm(h3)
-
-        # h3 is a 2D vector (a force that is applied to the agent)
-        # we bound the norm of the vector to be between 0 and 10
-        #return 10.0*(F.tanh(norm))*h3/norm if norm > 0 else 10*h3
-
+        x = F.leaky_relu(self.fc1(state))
+        x = self.bn1(x)
+        x = F.leaky_relu(self.fc2(x))
+        x = self.bn2(x)
+        x = self.fc3(x)
+        return F.tanh(self.bn3(x))
 
 class Critic(nn.Module):
     """Critic (Value) Model."""
@@ -77,12 +73,10 @@ class Critic(nn.Module):
 
     def forward(self, state, action):
         """Build a critic (value) network that maps (state, action) pairs -> Q-values."""
-        xs = F.relu(self.fcs1(state))
-        x = torch.cat((xs, action), dim=1)
-        x = F.relu(self.fc2(x))
-        return self.fc3(x)
+        state = state.view(-1, 48)
+        action = action.view(-1, 4)
 
-        #xs = F.leaky_relu(self.fcs1(state))
-        #x = torch.cat((xs, action), dim=1)
-        #x = F.leaky_relu(self.fc2(x))
-        #return self.fc3(x)
+        xs = F.leaky_relu(self.fcs1(state))
+        x = torch.cat((xs, action), dim=1)
+        x = F.leaky_relu(self.fc2(x))
+        return self.fc3(x)

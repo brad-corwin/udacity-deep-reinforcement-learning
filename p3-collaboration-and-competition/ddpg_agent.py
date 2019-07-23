@@ -41,15 +41,9 @@ class Agent():
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
 
         # Critic Network (w/ Target Network)
-        self.critic_local = Critic(state_size, action_size, random_seed).to(device)
-        self.critic_target = Critic(state_size, action_size, random_seed).to(device)
+        self.critic_local = Critic(state_size * num_agents, action_size * num_agents, random_seed).to(device)
+        self.critic_target = Critic(state_size * num_agents, action_size * num_agents, random_seed).to(device)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
-
-        # Critic Network (w/ Target Network)
-        # In case of Critic network, MADDPG should takes the states and actions of all agents
-        #self.critic_local = Critic(state_size * num_agents, action_size * num_agents, random_seed).to(device)
-        #self.critic_target = Critic(state_size * num_agents, action_size * num_agents, random_seed).to(device)
-        #self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
 
         # Noise process
         self.noise = OUNoise(action_size, random_seed)
@@ -64,8 +58,9 @@ class Agent():
 
         # Learn, if enough samples are available in memory
         if len(self.memory) > BATCH_SIZE:
-            experiences = self.memory.sample()
-            self.learn(experiences, GAMMA)
+            for _ in range(3):
+                experiences = self.memory.sample()
+                self.learn(experiences, GAMMA)
 
     def act(self, state, add_noise=True):
         """Returns actions for given state as per current policy."""
@@ -107,7 +102,7 @@ class Agent():
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
-        # torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1) # clip of local gradients of critic
+        torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1) # clip of local gradients of critic
         self.critic_optimizer.step()
 
         # ---------------------------- update actor ---------------------------- #
